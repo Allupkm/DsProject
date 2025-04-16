@@ -1,0 +1,68 @@
+Functions that needs to be implemented
+
+#Heartbeat check for server
+         
+#Heartbeat check for database
+        
+#Heartbeat check for client
+        
+#Register User
+        
+#Login User authentication required
+        
+#Logout User
+        
+#Create Course if professor or admin
+        
+#Create and Add Exam to a cource if professor or admin
+
+#Add Student to Course if professor or admin
+        
+#See completed exams if professor and student
+        
+#Grade exams if professor or admin (limited to courses where itself is professor)
+        
+#See all courses if student that is registered
+
+#See all courses if professor (limited to cources where itself is professor) or admin
+
+#See all exams if professor (limited to cources where itself is professor) or admin
+
+#Locking features to minimize data corruption
+
+#authentication
+
+#Encryption
+
+#Archiving exams 
+#Exams are archived from student when certain time is reached
+#Exams can be archived by professor using a button?
+#These can be seen on a different page, to all users
+
+Exam Creation & Management
+Question Type Handler: Support for multiple choice, true/false, short answer, essay questions
+Media Support: Store and serve images, diagrams, or other media for questions
+Exam Settings Service:
+Time limits
+Access controls (IP restrictions, browser lockdown)
+Visibility rules (when students can see results)
+Scheduling System: Set availability windows for exams
+
+Exam Delivery
+Progress Tracking: Save student answers as they progress
+Auto-submission: Force submission when time expires
+Synchronization: Handle connection interruptions during an exam
+
+Grading System
+Auto-grading Engine: For objective questions
+Manual Grading Interface: For essay/subjective responses
+Partial Credit System: Allow fractional points
+
+Data Management
+Database Backup: Regular automated backups
+
+Security Features
+Session Management: Maintain and verify user sessions
+Role-Based Access Control: Permissions system for actions
+Audit Logging: Track who did what and when
+Rate Limiting: Prevent brute force attacks
