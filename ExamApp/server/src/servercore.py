@@ -2,8 +2,8 @@ import threading
 import socket
 import time
 import pymongo
-# Now import models using absolute paths
-from models.Cources import Course
+
+from models.Course import Course
 from models.Exam import Exam
 from models.User import User
 
@@ -18,7 +18,7 @@ class DatabaseManager:
     
     def connectToDB(self): # Connect to the MongoDB server
         try:
-            self.client = pymongo.MongoClient(f"mongodb://{self.host}:{self.port}/")
+            self.client = pymongo.MongoClient(f"mongodb://{self.host}:{self.port}/{self.dbname}")
             self.db = self.client[self.dbname]
             print(f"Connected to MongoDB at {self.host}:{self.port}")
             return True
@@ -55,8 +55,8 @@ class DatabaseManager:
 
 # Now we start creating server components
 class Server:
-    def __init__(self, dbManager, host='0.0.0.0', port=3000):
-        self.dbManager = dbManager
+    def __init__(self,dbmanager ,host='0.0.0.0', port=3000):
+        self.dbmanager = dbmanager
         self.host = host
         self.port = port
         self.socket = None
@@ -71,7 +71,7 @@ class Server:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.bind((self.host, self.port))
-            socket.listen()
+            self.socket.listen()
             self.running = True
             
             self.thread = threading.Thread(target=self.addConnection)
