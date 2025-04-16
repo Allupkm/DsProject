@@ -2,25 +2,36 @@ import threading
 import socket
 import time
 import pymongo
+import os
 
+from dotenv import load_dotenv
 from models.Course import Course
 from models.Exam import Exam
 from models.User import User
 
 # This is a singleton class that manages the database connection and initialization.
 class DatabaseManager:
-    def __init__(self, db_name="exam_app", host="localhost", port=27017): # default values if not provided
+    def __init__(self):
+        load_dotenv()
+
+        user = os.getenv("MONGO_USER")
+        password = os.getenv("MONGO_PASS")
+        cluster = os.getenv("MONGO_CLUSTER")
+        db_name = os.getenv("MONGO_DB")
+
         self.dbname = db_name
-        self.host = host
-        self.port = port
+        self.uri = (
+            f"mongodb+srv://{user}:{password}@{cluster}/?tls=true"
+            f"&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000"
+        )
         self.client = None
         self.db = None
-    
-    def connectToDB(self): # Connect to the MongoDB server
+
+    def connectToDB(self):
         try:
-            self.client = pymongo.MongoClient(f"mongodb://{self.host}:{self.port}/{self.dbname}")
+            self.client = pymongo.MongoClient(self.uri)
             self.db = self.client[self.dbname]
-            print(f"Connected to MongoDB at {self.host}:{self.port}")
+            print("Connected to MongoDB Atlas/CosmosDB!")
             return True
         except Exception as e:
             print(f"Failed to connect to MongoDB: {e}")
