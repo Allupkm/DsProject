@@ -65,13 +65,52 @@ class Server:
         self.thread = None
     
     def start(self):
-        pass
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.bind((self.host, self.port))
+            socket.listen()
+            self.running = True
+            
+            self.thread = threading.Thread(target=self.addConnection)
+            self.thread.daemon = True  # Daemonize thread
+            self.thread.start()
+            logging.info(f"Server started on {self.host}:{self.port}")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to start server: {e}")
+            return False
+        
     
     def stop(self):
-        pass
+        self.running = False
+        for clientSocket in self.clients:
+            try:
+                clientSocket.close()
+                logging.info("Client socket closed.")
+            except Exception as e:
+                logging.error(f"Error closing client socket: {e}")
+        if self.socket:
+            try:
+                self.socket.close()
+                logging.info("Server socket closed.")
+            except Exception as e:
+                logging.error(f"Error closing server socket: {e}")
+
     
     def addConnection(self):
-        pass
+        while self.running:
+            try:
+                ClientSocket, ClientAddress = self.socket.accept()
+                logging.info(f"Connection from {ClientAddress} has been established.")
+                ClientThread= threading.Thread(target=self.handleClient, args=(ClientSocket,ClientAddress))
+                ClientThread.daemon = True  # Daemonize thread
+                ClientThread.start()
+                self.clients.append(ClientSocket, ClientAddress,ClientThread)
+            except Exception as e:
+                if self.running:
+                    logging.error(f"Error accepting connection: {e}")
+                
     
     def handleClient(self):
         pass
