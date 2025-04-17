@@ -1,11 +1,22 @@
-from mongoengine import Document, StringField, IntField, ListField, ReferenceField
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
-class Course(Document):
-    Coursecode = StringField(required=True, unique=True, max_length=20)
-    Coursename = StringField(required=True, unique=True, max_length=100)
-    description = StringField(max_length=200)
-    professorID = StringField(required=True, max_length=50)
-    professorName = StringField(required=True, max_length=100)
-    exams = ListField(ReferenceField('Exam'), default=[]) 
-    students = ListField(StringField(max_length=100), default=[])
-    Active = IntField(default=1)  # 1 for active, 0 for inactive
+
+class Course(Base):
+    __tablename__ = 'courses'
+    
+    id = Column(Integer, primary_key=True)
+    Coursecode = Column(String(20), nullable=False, unique=True)
+    Coursename = Column(String(100), nullable=False)
+    description = Column(String(200))
+    professorID = Column(String(50), ForeignKey('users.email'), nullable=False)
+    professorName = Column(String(100), nullable=False)
+    
+    # Relationships
+    exams = relationship("Exam", back_populates="course", cascade="all, delete-orphan")
+    professor = relationship("User", back_populates="courses_teaching")
+    enrolled_students = relationship("User", 
+                                   secondary="course_students",
+                                   back_populates="courses_enrolled")

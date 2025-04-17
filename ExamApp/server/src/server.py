@@ -3,6 +3,7 @@ import os
 import time
 import threading
 import tkinter as tk
+from dotenv import load_dotenv
 
 # Fix imports by adding parent directories to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,9 +22,12 @@ from models.Exam import Exam
 from models.User import User
 
 def main():
+    load_dotenv()
+    useLocalDB = os.getenv("USE_LOCAL_DB", "False").lower() == "true"
     # Initialize database
     print("Initializing database connection...")
-    db_manager = DatabaseManager()
+    
+    db_manager = DatabaseManager(useLocalDB)
     connected = db_manager.connectToDB()
     initialized = db_manager.innitDB()
     

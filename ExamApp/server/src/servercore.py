@@ -1,56 +1,62 @@
 import threading
 import socket
 import time
-import pymongo
-
+import os
+import pyodbc
+from dotenv import load_dotenv
 from models.Course import Course
 from models.Exam import Exam
 from models.User import User
 
 # This is a singleton class that manages the database connection and initialization.
 class DatabaseManager:
-    def __init__(self, db_name="exam_app", host="localhost", port=27017): # default values if not provided
-        self.dbname = db_name
-        self.host = host
-        self.port = port
-        self.client = None
-        self.db = None
-    
-    def connectToDB(self): # Connect to the MongoDB server
+    def __init__(self,useLocalDB=False):
+        load_dotenv()
+        self.useLocalDB = useLocalDB
+        if useLocalDB:
+            server = os.getenv("LOCAL_SQL_SERVER")
+            database = os.getenv("LOCAL_SQL_DATABASE")
+            Trusted = os.getenv("LOCAL_SQL_TRUSTED")
+            self.connectionString = f"Driver={{ODBC Driver 17 for SQL Server}};Server={server};Database={database};Trusted_Connection={Trusted};"
+        else:
+            server = os.getenv("SQL_SERVER")
+            database = os.getenv("SQL_DATABASE")
+            username = os.getenv("SQL_USERNAME")
+            password = os.getenv("SQL_PASSWORD")
+            self.connectionString = f"Driver={{ODBC Driver 17 for SQL Server}};Server={server};Database={database};UID={username};PWD={password};"
+            pass 
+        self.session = None
+    def connectToDB(self):
         try:
-            self.client = pymongo.MongoClient(f"mongodb://{self.host}:{self.port}/{self.dbname}")
-            self.db = self.client[self.dbname]
-            print(f"Connected to MongoDB at {self.host}:{self.port}")
+            if self.useLocalDB:
+                print("Connecting to Local Microsoft SQL Server...")
+                pyodbc.connect(self.connectionString)
+                self.session = True
+            else:
+                print("Connecting to Azure SQL Server...")
+                #
+                pass
             return True
         except Exception as e:
-            print(f"Failed to connect to MongoDB: {e}")
+            if self.useLocalDB:
+                print(f"Failed to connect to Local Microsoft SQL Server: {e}")
+            else:
+                print(f"Failed to connect to Azure SQL Server: {e}")
             return False
     
     def innitDB(self): # Initialize the database and collections
-        if not self.client:
-            print("Database connection not established.")
-            return False
         try:
-            if "Cources" not in self.db.list_collection_names():
-                self.db.create_collection("Cources")
-                print("Cources collection created.")
-            if "Exam" not in self.db.list_collection_names():
-                self.db.create_collection("Exam")
-                print("Exam collection created.")
-            if "User" not in self.db.list_collection_names():
-                self.db.create_collection("User")
-                print("User collection created.")
+            #This needs to be rebuilt
+            # Create the database and collections if they don't exist
+            # This is where you would create the tables and collections for your database
             return True
         except Exception as e:
             print(f"Failed to initialize database: {e}")
             return False
 
     def closeConnection(self): # Close the database connection
-        if self.client:
-            self.client.close()
-            print("Database connection closed.")
-        else:
-            print("No database connection to close.")
+        #This needs to be rebuilt
+        pass
 
 
 # Now we start creating server components
