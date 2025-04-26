@@ -1,0 +1,15 @@
+pyodbc
+python-dotenv
+flask
+flask-sqlalchemy
+flask-login
+flask-wtf
+bcrypt
+pyjwt
+cryptography
+requests
+gunicorn
+azure-storage-blob
+tk
+
+#download with: pip install -r requirements.txt
