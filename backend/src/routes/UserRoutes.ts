@@ -29,39 +29,53 @@ export default class UserRoutes {
 
     // Create new user
     // Change password
-    this.router.post('/:id/change-password',( async (req: Request, res: Response) => {
-      try {
-        const { currentPassword, newPassword } = req.body;
-        const userId = parseInt(req.params.id);
-
-        // Verify user exists
-        const user = await this.user.getByUsername(req.body.username) || await this.user.getById(userId);
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
+    // Add this to your initializeRoutes() method in UserRoutes.ts
+this.router.post('/', (async (req: Request, res: Response) => {
+    try {
+        const { username, email, first_name, last_name, role, password } = req.body;
+        
+        // Basic validation
+        if (!username || !email || !first_name || !last_name || !role || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
         }
 
-        // In a real application, you should always verify the current password
-        // For this simplified version, we'll skip that check if currentPassword is empty
-        // This is NOT secure and should be improved in a production environment
-        if (currentPassword) {
-          const isMatch = await bcrypt.compare(currentPassword, user.password_hash || '');
-          if (!isMatch) {
-            return res.status(401).json({ message: 'Current password is incorrect' });
-          }
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
 
-        const success = await this.user.changePassword(userId, newPassword);
-        if (success) {
-          res.json({ message: 'Password changed successfully' });
-        } else {
-          res.status(400).json({ message: 'Failed to change password' });
+        // Check if username or email already exists
+        const existingUserByUsername = await this.user.getByUsername(username);
+        const existingUserByEmail = await this.user.getByEmail(email);
+        
+        if (existingUserByUsername) {
+            return res.status(409).json({ message: 'Username already exists' });
         }
-      } catch (error) {
-        console.error('Error changing password:', error);
+        
+        if (existingUserByEmail) {
+            return res.status(409).json({ message: 'Email already exists' });
+        }
+
+        // Create the user with is_active property
+        const newUser = await this.user.create({
+            username,
+            email,
+            first_name,
+            last_name,
+            role,
+            is_active: true
+        }, password);
+
+        // Return the user without sensitive data
+        const safeUser = { ...newUser };
+        //delete safeUser.salt;
+
+        res.status(201).json(safeUser);
+    } catch (error) {
+        console.error('Error creating user:', error);
         res.status(500).json({ message: 'Internal server error' });
-      }
-    })as any);
-
+    }
+}) as any);
+    
     // Get user by ID
     this.router.get('/:id', async (req, res) => {
       try {
