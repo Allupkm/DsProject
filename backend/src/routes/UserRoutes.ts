@@ -11,14 +11,12 @@ export default class UserRoutes {
     this.router = Router();
     this.user = new User(pool);
     this.initializeRoutes();
-
   }
   
   private initializeRoutes() {
     // Get all users (admin only)
     this.router.get('/', async (req, res) => {
       try {
-        // In a real app, you would check the user's role here
         const users = await this.user.getAllSimplified();
         res.json(users);
       } catch (error) {
@@ -28,19 +26,17 @@ export default class UserRoutes {
     });
 
     // Create new user
-    // Change password
-    // Add this to your initializeRoutes() method in UserRoutes.ts
-this.router.post('/', (async (req: Request, res: Response) => {
-    try {
+    this.router.post('/', (async (req: Request, res: Response) => {
+      try {
         const { username, email, first_name, last_name, role, password } = req.body;
         
         // Basic validation
         if (!username || !email || !first_name || !last_name || !role || !password) {
-            return res.status(400).json({ message: 'All fields are required' });
+          return res.status(400).json({ message: 'All fields are required' });
         }
 
         if (password.length < 6) {
-            return res.status(400).json({ message: 'Password must be at least 6 characters' });
+          return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
 
         // Check if username or email already exists
@@ -48,38 +44,39 @@ this.router.post('/', (async (req: Request, res: Response) => {
         const existingUserByEmail = await this.user.getByEmail(email);
         
         if (existingUserByUsername) {
-            return res.status(409).json({ message: 'Username already exists' });
+          return res.status(409).json({ message: 'Username already exists' });
         }
         
         if (existingUserByEmail) {
-            return res.status(409).json({ message: 'Email already exists' });
+          return res.status(409).json({ message: 'Email already exists' });
         }
 
         // Create the user with is_active property
         const newUser = await this.user.create({
-            username,
-            email,
-            first_name,
-            last_name,
-            role,
-            is_active: true
+          username,
+          email,
+          first_name,
+          last_name,
+          role,
+          is_active: true
         }, password);
 
-        // Return the user without sensitive data
-        const safeUser = { ...newUser };
-        //delete safeUser.salt;
-
-        res.status(201).json(safeUser);
-    } catch (error) {
+        res.status(201).json(newUser);
+      } catch (error) {
         console.error('Error creating user:', error);
         res.status(500).json({ message: 'Internal server error' });
-    }
-}) as any);
+      }
+    }) as any);
     
     // Get user by ID
-    this.router.get('/:id', async (req, res) => {
+    this.router.get('/:id', (async (req: Request, res: Response) => {
       try {
-        const user = await this.user.getById(parseInt(req.params.id));
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        
+        const user = await this.user.getById(userId);
         if (user) {
           res.json(user);
         } else {
@@ -89,12 +86,15 @@ this.router.post('/', (async (req: Request, res: Response) => {
         console.error('Error getting user:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
-    });
+    }) as any);
 
     // Update user
-    this.router.put('/:id',( async (req: Request, res: Response) => {
+    this.router.put('/:id', (async (req: Request, res: Response) => {
       try {
         const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: 'Invalid user ID' });
+        }
         
         // Check if user exists
         const existingUser = await this.user.getById(userId);
@@ -121,29 +121,29 @@ this.router.post('/', (async (req: Request, res: Response) => {
         if (updatedUser) {
           res.json(updatedUser);
         } else {
-          res.status(404).json({ message: 'User not found' });
+          res.status(404).json({ message: 'User not found or no changes made' });
         }
       } catch (error) {
         console.error('Error updating user:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
-    })as any);
+    }) as any);
 
     // Change password
-    this.router.post('/:id/change-password',( async (req: Request, res: Response) => {
+    this.router.post('/:id/change-password', (async (req: Request, res: Response) => {
       try {
         const { currentPassword, newPassword } = req.body;
         const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: 'Invalid user ID' });
+        }
 
         // Verify user exists
-        const user = await this.user.getByUsername(req.body.username) || await this.user.getById(userId);
+        const user = await this.user.getById(userId);
         if (!user) {
           return res.status(404).json({ message: 'User not found' });
         }
 
-        // In a real application, you should always verify the current password
-        // For this simplified version, we'll skip that check if currentPassword is empty
-        // This is NOT secure and should be improved in a production environment
         if (currentPassword) {
           const isMatch = await bcrypt.compare(currentPassword, user.password_hash || '');
           if (!isMatch) {
@@ -161,21 +161,30 @@ this.router.post('/', (async (req: Request, res: Response) => {
         console.error('Error changing password:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
-    })as any);
+    }) as any);
     
     // Delete user (admin only)
-    this.router.delete('/:id', async (req, res) => {
+    this.router.delete('/:id', (async (req: Request, res: Response) => {
       try {
-        // In a real app, you would check the user's role here
         const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: 'Invalid user ID' });
+        }
         
-        // You would need to implement a delete method in your User class
-        // For now, just return a success response
-        res.json({ message: 'User deleted successfully' });
+        const { success, message } = await this.user.delete(userId);
+        
+        if (success) {
+          res.json({ message });
+        } else {
+          res.status(400).json({ message });
+        }
       } catch (error) {
         console.error('Error deleting user:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ 
+          message: 'Internal server error',
+          detail: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
-    });
+    }) as any);
   }
 }
