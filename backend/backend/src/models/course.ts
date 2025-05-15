@@ -1,0 +1,172 @@
+import { ConnectionPool } from 'mssql';
+
+export interface ICourse {
+    course_id?: number;
+    course_code: string;
+    course_name: string;
+    description?: string;
+    created_by: number;
+    created_at?: Date;
+    is_active?: boolean;
+}
+
+export class Course {
+    constructor(private db: ConnectionPool) {}
+  
+    // Create a new course
+    async create(course: ICourse): Promise<ICourse> {
+      try {
+        const result = await this.db.request()
+          .input('course_code', course.course_code)
+          .input('course_name', course.course_name)
+          .input('description', course.description || null)
+          .input('created_by', course.created_by)
+          .input('is_active', course.is_active === undefined ? true : course.is_active)
+          .query(`
+            INSERT INTO courses (course_code, course_name, description, created_by, created_at, is_active)
+            OUTPUT inserted.*
+            VALUES (@course_code, @course_name, @description, @created_by, GETDATE(), @is_active)
+          `);
+        
+        return result.recordset[0];
+      } catch (err) {
+        console.error('Error creating course:', err);
+        throw err;
+      }
+    }
+  
+    // Get course by ID
+    async getById(courseId: number): Promise<ICourse | null> {
+      try {
+        const result = await this.db.request()
+          .input('course_id', courseId)
+          .query('SELECT * FROM courses WHERE course_id = @course_id');
+        
+        return result.recordset[0] || null;
+      } catch (err) {
+        console.error('Error getting course by ID:', err);
+        throw err;
+      }
+    }
+  
+    // Get all active courses
+    async getAll(includeInactive = false): Promise<ICourse[]> {
+      try {
+        let query = 'SELECT * FROM courses';
+        if (!includeInactive) {
+          query += ' WHERE is_active = 1';
+        }
+        const result = await this.db.request().query(query);
+        return result.recordset;
+      } catch (err) {
+        console.error('Error getting all courses:', err);
+        throw err;
+      }
+    }
+
+    async getAllSimplified(): Promise<{id: number, name: string, description: string}[]> {
+      const courses = await this.getAll();
+      return courses.map(c => ({
+        id: c.course_id!,
+        name: c.course_name,
+        description: c.description || ''
+      }));
+    }
+  
+    // Update a course
+    async update(courseId: number, courseData: Partial<ICourse>): Promise<ICourse | null> {
+      try {
+        const updates: string[] = [];
+        const request = this.db.request().input('course_id', courseId);
+        
+        Object.entries(courseData).forEach(([key, value]) => {
+          if (key !== 'course_id' && key !== 'created_at') {
+            updates.push(`${key} = @${key}`);
+            request.input(key, value);
+          }
+        });
+        
+        if (updates.length === 0) return null;
+        
+        const query = `
+          UPDATE courses 
+          SET ${updates.join(', ')} 
+          OUTPUT inserted.*
+          WHERE course_id = @course_id
+        `;
+        
+        const result = await request.query(query);
+        return result.recordset[0] || null;
+      } catch (err) {
+        console.error('Error updating course:', err);
+        throw err;
+      }
+    }
+  
+    // Get courses by instructor (created_by)
+    async getByInstructor(userId: number): Promise<ICourse[]> {
+      try {
+        const result = await this.db.request()
+          .input('created_by', userId)
+          .query('SELECT * FROM courses WHERE created_by = @created_by');
+          
+        return result.recordset;
+      } catch (err) {
+        console.error('Error getting courses by instructor:', err);
+        throw err;
+      }
+    }
+  
+    // Get enrolled courses for a student
+    async getEnrolledCourses(userId: number): Promise<ICourse[]> {
+      try {
+        const result = await this.db.request()
+          .input('user_id', userId)
+          .query(`
+            SELECT c.* FROM courses c
+            JOIN course_enrollments e ON c.course_id = e.course_id
+            WHERE e.user_id = @user_id AND c.is_active = 1
+          `);
+          
+        return result.recordset;
+      } catch (err) {
+        console.error('Error getting enrolled courses:', err);
+        throw err;
+      }
+    }
+  
+    // Enroll a student in a course
+    async enrollStudent(courseId: number, userId: number, role: string = 'student'): Promise<boolean> {
+      try {
+        const result = await this.db.request()
+          .input('course_id', courseId)
+          .input('user_id', userId)
+          .input('role', role)
+          .query(`
+            INSERT INTO course_enrollments (course_id, user_id, enrollment_date, role)
+            VALUES (@course_id, @user_id, GETDATE(), @role)
+          `);
+          
+        return result.rowsAffected[0] > 0;
+      } catch (err) {
+        console.error('Error enrolling student:', err);
+        throw err;
+      }
+    }
+  
+    // Delete a course (soft delete by setting is_active to false)
+    async delete(courseId: number): Promise<boolean> {
+      try {
+        const result = await this.db.request()
+          .input('course_id', courseId)
+          .query('UPDATE courses SET is_active = 0 WHERE course_id = @course_id');
+          
+        return result.rowsAffected[0] > 0;
+      } catch (err) {
+        console.error('Error deleting course:', err);
+        throw err;
+      }
+    }
+}
+  
+export default Course;
