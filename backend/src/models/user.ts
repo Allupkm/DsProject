@@ -23,34 +23,38 @@ export class User {
   // Create a new user with password hashing
   async create(user: Omit<IUser, 'user_id' | 'password_hash' | 'salt' | 'last_login' | 'created_at' | 'updated_at'>, password: string) {
     try {
-        const saltRounds = 10;
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(password, salt);
+      const saltRounds = 10;
+      const salt = await bcrypt.genSalt(saltRounds);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-        const result = await this.db.request()
-            .input('username', NVarChar, user.username)
-            .input('email', NVarChar, user.email)
-            .input('first_name', NVarChar, user.first_name)
-            .input('last_name', NVarChar, user.last_name)
-            .input('role', NVarChar, user.role)
-            .input('password_hash', NVarChar, hashedPassword)
-            .input('salt', NVarChar, salt)
-            .input('is_active', Bit, 1)
-            .query(`
-                INSERT INTO users (username, email, first_name, last_name, role, password_hash, salt, is_active, created_at, updated_at)
-                VALUES (@username, @email, @first_name, @last_name, @role, @password_hash, @salt, @is_active, GETDATE(), GETDATE());
-                SELECT SCOPE_IDENTITY() AS id;
-            `);
+      const result = await this.db.request()
+        .input('username', NVarChar, user.username)
+        .input('email', NVarChar, user.email)
+        .input('first_name', NVarChar, user.first_name)
+        .input('last_name', NVarChar, user.last_name)
+        .input('role', NVarChar, user.role)
+        .input('password_hash', NVarChar, hashedPassword)
+        .input('salt', NVarChar, salt)
+        .input('is_active', Bit, user.is_active !== undefined ? user.is_active : true)
+        .query(`
+          INSERT INTO users (username, email, first_name, last_name, role, password_hash, salt, is_active, created_at, updated_at)
+          OUTPUT inserted.*
+          VALUES (@username, @email, @first_name, @last_name, @role, @password_hash, @salt, @is_active, GETDATE(), GETDATE());
+        `);
 
-        return {
-            id: result.recordset[0].id,
-            ...user
-        };
+      const newUser = result.recordset[0];
+      
+      // Return without sensitive data
+      const safeUser = { ...newUser };
+      delete safeUser.password_hash;
+      delete safeUser.salt;
+      
+      return safeUser;
     } catch (error) {
-        console.error('Error creating user:', error);
-        throw error;
+      console.error('Error creating user:', error);
+      throw error;
     }
-}
+  }
 
   async getById(userId: number): Promise<IUser | null> {
     try {
@@ -61,7 +65,6 @@ export class User {
       const user = result.recordset[0];
       if (!user) return null;
 
-      // Convert for frontend usage
       return {
         user_id: user.user_id,
         username: user.username,
@@ -130,18 +133,60 @@ export class User {
       throw err;
     }
   }
-  async delete(userId: number): Promise<boolean> {
-  try {
-    const result = await this.db.request()
-      .input('user_id', Int, userId)
-      .query('DELETE FROM users WHERE user_id = @user_id');
-    
-    return result.rowsAffected[0] > 0;
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    throw err;
+
+  async delete(userId: number): Promise<{ success: boolean; message: string }> {
+    try {
+      // First check if the user exists
+      const userExists = await this.getById(userId);
+      if (!userExists) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Check if the user is enrolled in any courses
+      const enrollmentCheck = await this.db.request()
+        .input('user_id', Int, userId)
+        .query(`
+          SELECT COUNT(*) as count 
+          FROM course_enrollments 
+          WHERE user_id = @user_id
+        `);
+      
+      const enrollmentCount = enrollmentCheck.recordset[0].count;
+      
+      // Check if user has created any courses
+      const courseCheck = await this.db.request()
+        .input('created_by', Int, userId)
+        .query(`
+          SELECT COUNT(*) as count 
+          FROM courses 
+          WHERE created_by = @created_by
+        `);
+      
+      const courseCount = courseCheck.recordset[0].count;
+
+      // If there are dependencies, mark as inactive instead of deleting
+      if (enrollmentCount > 0 || courseCount > 0) {
+        await this.db.request()
+          .input('user_id', Int, userId)
+          .query('UPDATE users SET is_active = 0 WHERE user_id = @user_id');
+        return { success: true, message: 'User deactivated due to existing course dependencies' };
+      }
+      
+      // If no dependencies, proceed with deletion
+      const result = await this.db.request()
+        .input('user_id', Int, userId)
+        .query('DELETE FROM users WHERE user_id = @user_id');
+      
+      return {
+        success: result.rowsAffected[0] > 0,
+        message: result.rowsAffected[0] > 0 ? 'User deleted successfully' : 'Failed to delete user'
+      };
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      throw err;
+    }
   }
-}
+
   async update(userId: number, userData: Partial<IUser>): Promise<IUser | null> {
     try {
       const updates: string[] = [];
@@ -153,6 +198,7 @@ export class User {
       delete cleanedData.password_hash;
       delete cleanedData.salt;
       delete cleanedData.created_at;
+      delete cleanedData.last_login;
       delete cleanedData.updated_at;
 
       Object.entries(cleanedData).forEach(([key, value]) => {
@@ -162,7 +208,11 @@ export class User {
         }
       });
 
-      if (updates.length === 0) return null;
+      if (updates.length === 0) {
+        // No updates to perform, return the current user
+        return this.getById(userId);
+      }
+      
       updates.push('updated_at = GETDATE()');
 
       const result = await request.query(`
@@ -175,7 +225,7 @@ export class User {
       const user = result.recordset[0];
       if (!user) return null;
 
-      // Convert for frontend usage
+      // Return without sensitive data
       const safeUser = { ...user };
       delete safeUser.password_hash;
       delete safeUser.salt;
