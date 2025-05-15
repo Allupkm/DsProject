@@ -23,34 +23,34 @@ export class User {
   // Create a new user with password hashing
   async create(user: Omit<IUser, 'user_id' | 'password_hash' | 'salt' | 'last_login' | 'created_at' | 'updated_at'>, password: string) {
     try {
-      const saltRounds = 10;
-      const salt = await bcrypt.genSalt(saltRounds);
-      const hashedPassword = await bcrypt.hash(password, salt);
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-      const result = await this.db.request()
-        .input('username', NVarChar, user.username)
-        .input('email', NVarChar, user.email)
-        .input('first_name', NVarChar, user.first_name)
-        .input('last_name', NVarChar, user.last_name)
-        .input('role', NVarChar, user.role)
-        .input('password_hash', NVarChar, hashedPassword)
-        .input('salt', NVarChar, salt)
-        .input('is_active', Bit, 1)
-        .query(`
-          INSERT INTO users (username, email, first_name, last_name, role, password_hash, salt, is_active, created_at, updated_at)
-          VALUES (@username, @email, @first_name, @last_name, @role, @password_hash, @salt, @is_active, GETDATE(), GETDATE());
-          SELECT SCOPE_IDENTITY() AS id;
-        `);
+        const result = await this.db.request()
+            .input('username', NVarChar, user.username)
+            .input('email', NVarChar, user.email)
+            .input('first_name', NVarChar, user.first_name)
+            .input('last_name', NVarChar, user.last_name)
+            .input('role', NVarChar, user.role)
+            .input('password_hash', NVarChar, hashedPassword)
+            .input('salt', NVarChar, salt)
+            .input('is_active', Bit, 1)
+            .query(`
+                INSERT INTO users (username, email, first_name, last_name, role, password_hash, salt, is_active, created_at, updated_at)
+                VALUES (@username, @email, @first_name, @last_name, @role, @password_hash, @salt, @is_active, GETDATE(), GETDATE());
+                SELECT SCOPE_IDENTITY() AS id;
+            `);
 
-      return {
-        id: result.recordset[0].id,
-        ...user
-      };
+        return {
+            id: result.recordset[0].id,
+            ...user
+        };
     } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
+        console.error('Error creating user:', error);
+        throw error;
     }
-  }
+}
 
   async getById(userId: number): Promise<IUser | null> {
     try {
@@ -130,7 +130,18 @@ export class User {
       throw err;
     }
   }
-
+  async delete(userId: number): Promise<boolean> {
+  try {
+    const result = await this.db.request()
+      .input('user_id', Int, userId)
+      .query('DELETE FROM users WHERE user_id = @user_id');
+    
+    return result.rowsAffected[0] > 0;
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    throw err;
+  }
+}
   async update(userId: number, userData: Partial<IUser>): Promise<IUser | null> {
     try {
       const updates: string[] = [];
