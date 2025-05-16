@@ -1,6 +1,13 @@
 # DsProject
 Distributed Systems Final Project
-
+Backend has the latest code
 
 ## Requirements 
-- PyMongo
+- Nodejs
+
+## How to use
+Download Backend
+Run command npm install, to download all dependencies
+populate .env file with your own server config
+After run command npm start to connect to database and start server that handles connections
+Start ui client
