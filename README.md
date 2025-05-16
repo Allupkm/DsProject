@@ -1,7 +1,6 @@
 # DsProject
 Distributed Systems Final Project
-Backend has the latest code
-
+Backend has the latest code, where test has one of the old directions
 ## Requirements 
 - Nodejs
 
