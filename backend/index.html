@@ -106,8 +106,6 @@
         <div class="tabs">
             <div class="tab active" onclick="switchTab('users')">Users</div>
             <div class="tab" onclick="switchTab('courses')">Courses</div>
-            <div class="tab" onclick="switchTab('exams')">Exams</div>
-            <div class="tab" onclick="switchTab('questions')">Questions</div>
         </div>
         
         <div id="users" class="tab-content active">
@@ -190,95 +188,6 @@
                         <th>ID</th>
                         <th>Name</th>
                         <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        
-        <div id="exams" class="tab-content">
-            <h2>Exams</h2>
-            <div class="action-buttons">
-                <button onclick="loadData('exams')">Refresh Exams</button>
-                <button onclick="showAddForm('exam')">Add New Exam</button>
-            </div>
-            <div id="exam-form" style="display: none; margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
-                <h3>Add/Edit Exam</h3>
-                <div class="form-group">
-                    <label for="exam-id">ID (leave empty for new exam):</label>
-                    <input type="text" id="exam-id" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="exam-name">Name:</label>
-                    <input type="text" id="exam-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="exam-course">Course ID:</label>
-                    <input type="text" id="exam-course" required>
-                </div>
-                <div class="form-group">
-                    <label for="exam-date">Date:</label>
-                    <input type="datetime-local" id="exam-date">
-                </div>
-                <button onclick="saveExam()">Save</button>
-                <button onclick="cancelEdit()">Cancel</button>
-                <div id="exam-error" class="error"></div>
-            </div>
-            <table id="exams-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Course ID</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        
-        <div id="questions" class="tab-content">
-            <h2>Questions</h2>
-            <div class="action-buttons">
-                <button onclick="loadData('questions')">Refresh Questions</button>
-                <button onclick="showAddForm('question')">Add New Question</button>
-            </div>
-            <div id="question-form" style="display: none; margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
-                <h3>Add/Edit Question</h3>
-                <div class="form-group">
-                    <label for="question-id">ID (leave empty for new question):</label>
-                    <input type="text" id="question-id" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="question-text">Question Text:</label>
-                    <input type="text" id="question-text" required>
-                </div>
-                <div class="form-group">
-                    <label for="question-exam">Exam ID:</label>
-                    <input type="text" id="question-exam" required>
-                </div>
-                <div class="form-group">
-                    <label for="question-options">Options (comma separated):</label>
-                    <input type="text" id="question-options" required>
-                </div>
-                <div class="form-group">
-                    <label for="question-answer">Correct Answer:</label>
-                    <input type="text" id="question-answer" required>
-                </div>
-                <button onclick="saveQuestion()">Save</button>
-                <button onclick="cancelEdit()">Cancel</button>
-                <div id="question-error" class="error"></div>
-            </div>
-            <table id="questions-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Question Text</th>
-                        <th>Exam ID</th>
-                        <th>Options</th>
-                        <th>Correct Answer</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -376,30 +285,6 @@
                             <button onclick="deleteItem('course', ${item.id})">Delete</button>
                         </td>
                     `;
-                } else if (type === 'exams') {
-                    const examDate = item.date ? new Date(item.date).toLocaleString() : '';
-                    row.innerHTML = `
-                        <td>${item.id || ''}</td>
-                        <td>${item.name || ''}</td>
-                        <td>${item.courseId || ''}</td>
-                        <td>${examDate}</td>
-                        <td>
-                            <button onclick="editItem('exam', ${item.id})">Edit</button>
-                            <button onclick="deleteItem('exam', ${item.id})">Delete</button>
-                        </td>
-                    `;
-                } else if (type === 'questions') {
-                    row.innerHTML = `
-                        <td>${item.id || ''}</td>
-                        <td>${item.questionText || ''}</td>
-                        <td>${item.examId || ''}</td>
-                        <td>${item.options ? item.options.join(', ') : ''}</td>
-                        <td>${item.correctAnswer || ''}</td>
-                        <td>
-                            <button onclick="editItem('question', ${item.id})">Edit</button>
-                            <button onclick="deleteItem('question', ${item.id})">Delete</button>
-                        </td>
-                    `;
                 }
             });
         }
@@ -444,19 +329,6 @@
                     } else if (type === 'course') {
                         document.getElementById('course-name').value = item.name || '';
                         document.getElementById('course-description').value = item.description || '';
-                    } else if (type === 'exam') {
-                        document.getElementById('exam-name').value = item.name || '';
-                        document.getElementById('exam-course').value = item.courseId || '';
-                        if (item.date) {
-                            const date = new Date(item.date);
-                            const localDateTime = date.toISOString().slice(0, 16);
-                            document.getElementById('exam-date').value = localDateTime;
-                        }
-                    } else if (type === 'question') {
-                        document.getElementById('question-text').value = item.questionText || '';
-                        document.getElementById('question-exam').value = item.examId || '';
-                        document.getElementById('question-options').value = item.options ? item.options.join(', ') : '';
-                        document.getElementById('question-answer').value = item.correctAnswer || '';
                     }
                     
                     // Clear error message
@@ -476,121 +348,126 @@
         }
         
         // Save a user
-        // Modified saveUser function in index.html
         function saveUser() {
-    const id = document.getElementById('user-id').value;
-    const nameParts = document.getElementById('user-name').value.split(' ');
-    const password = document.getElementById('user-password').value;
-    
-    // For create operations
-    if (!id) {
-        if (!password || password.length < 6) {
-            document.getElementById('user-error').textContent = 'Password must be at least 6 characters long';
-            return;
+            const id = document.getElementById('user-id').value;
+            const nameParts = document.getElementById('user-name').value.split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || 'User';
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const role = document.getElementById('user-role').value;
+            
+            // For create operations
+            if (!id) {
+                if (!password || password.length < 6) {
+                    document.getElementById('user-error').textContent = 'Password must be at least 6 characters long';
+                    return;
+                }
+                
+                const newUser = {
+                    username: email.split('@')[0], // Generate username from email
+                    email: email,
+                    first_name: firstName,
+                    last_name: lastName,
+                    role: role,
+                    password: password
+                };
+                
+                fetch(`${API_BASE_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newUser)
+                })
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
+                        throw new Error(errorData.message || `Failed to create user (${response.status})`);
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    cancelEdit();
+                    loadData('users');
+                })
+                .catch(error => {
+                    console.error('Error creating user:', error);
+                    document.getElementById('user-error').textContent = error.message;
+                });
+            } 
+            // For update operations
+            else {
+                const userData = {
+                    username: email.split('@')[0],
+                    email: email,
+                    first_name: firstName,
+                    last_name: lastName,
+                    role: role
+                };
+                
+                fetch(`${API_BASE_URL}/users/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                })
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
+                        throw new Error(errorData.message || `Failed to update user (${response.status})`);
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    // If password was provided, also update the password
+                    if (password && password.length >= 6) {
+                        return changeUserPassword(id, password);
+                    } else if (password && password.length > 0) {
+                        document.getElementById('user-error').textContent = 'Password must be at least 6 characters long';
+                        throw new Error('Password too short');
+                    }
+                })
+                .then(() => {
+                    cancelEdit();
+                    loadData('users');
+                })
+                .catch(error => {
+                    console.error('Error updating user:', error);
+                    if (error.message !== 'Password too short') {
+                        document.getElementById('user-error').textContent = error.message;
+                    }
+                });
+            }
         }
-        
-        const newUser = {
-            user: {
-                username: document.getElementById('user-email').value.split('@')[0],
-                email: document.getElementById('user-email').value,
-                first_name: nameParts[0],
-                last_name: nameParts.slice(1).join(' ') || 'User',
-                role: document.getElementById('user-role').value
-            },
-            password: password
-        };
-        
-        fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newUser)
-        })
-        .then(async response => {
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
-                throw new Error(errorData.message || `Failed to create user (${response.status})`);
-            }
-            return response.json();
-        })
-        .then(() => {
-            cancelEdit();
-            loadData('users');
-        })
-        .catch(error => {
-            console.error('Error creating user:', error);
-            document.getElementById('user-error').textContent = error.message;
-        });
-    } 
-    // For update operations
-    else {
-        const userData = {
-            username: document.getElementById('user-email').value.split('@')[0],
-            email: document.getElementById('user-email').value,
-            first_name: nameParts[0],
-            last_name: nameParts.slice(1).join(' ') || 'User',
-            role: document.getElementById('user-role').value
-        };
-        
-        fetch(`${API_BASE_URL}/users/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData)
-        })
-        .then(async response => {
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
-                throw new Error(errorData.message || `Failed to update user (${response.status})`);
-            }
-            return response.json();
-        })
-        .then(() => {
-            // If password was provided, also update the password
-            if (password && password.length >= 6) {
-                return changeUserPassword(id, password);
-            } else if (password && password.length > 0) {
-                document.getElementById('user-error').textContent = 'Password must be at least 6 characters long';
-                throw new Error('Password too short');
-            }
-        })
-        .then(() => {
-            cancelEdit();
-            loadData('users');
-        })
-        .catch(error => {
-            console.error('Error updating user:', error);
-            if (error.message !== 'Password too short') {
-                document.getElementById('user-error').textContent = error.message;
-            }
-        });
-    }
-}
 
-// Helper function to change user password
-function changeUserPassword(userId, newPassword) {
-    // For simplicity, we're assuming the current password is not needed
-    // In a real application, you would need to implement this properly
-    return fetch(`${API_BASE_URL}/users/${userId}/change-password`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            currentPassword: '',  // This would need a proper implementation in a real app
-            newPassword: newPassword
-        })
-    })
-    .then(async response => {
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
-            throw new Error(errorData.message || `Failed to change password (${response.status})`);
+        // Helper function to change user password
+        function changeUserPassword(userId, newPassword) {
+            return fetch(`${API_BASE_URL}/users/${userId}/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    password: newPassword
+                })
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Failed to parse error' }));
+                    throw new Error(errorData.message || `Failed to change password (${response.status})`);
+                }
+                return response.json();
+            });
         }
-        return response.json();
-    });
-}
+        
+        // Show change password form (this function needs to be defined)
+        function showChangePasswordForm(userId) {
+            // You could implement a form to change just the password
+            // For now, we'll just edit the user which includes password field
+            editItem('user', userId);
+        }
         
         // Save a course
         function saveCourse() {
@@ -623,77 +500,6 @@ function changeUserPassword(userId, newPassword) {
             .catch(error => {
                 console.error('Error saving course:', error);
                 document.getElementById('course-error').textContent = `Error saving course: ${error.message}`;
-            });
-        }
-        
-        // Save an exam
-        function saveExam() {
-            const id = document.getElementById('exam-id').value;
-            const exam = {
-                name: document.getElementById('exam-name').value,
-                courseId: document.getElementById('exam-course').value,
-                date: document.getElementById('exam-date').value
-            };
-            
-            const url = id ? `${API_BASE_URL}/exams/${id}` : `${API_BASE_URL}/exams`;
-            const method = id ? 'PUT' : 'POST';
-            
-            fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(exam)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(() => {
-                cancelEdit();
-                loadData('exams');
-            })
-            .catch(error => {
-                console.error('Error saving exam:', error);
-                document.getElementById('exam-error').textContent = `Error saving exam: ${error.message}`;
-            });
-        }
-        
-        // Save a question
-        function saveQuestion() {
-            const id = document.getElementById('question-id').value;
-            const question = {
-                questionText: document.getElementById('question-text').value,
-                examId: document.getElementById('question-exam').value,
-                options: document.getElementById('question-options').value.split(',').map(opt => opt.trim()),
-                correctAnswer: document.getElementById('question-answer').value
-            };
-            
-            const url = id ? `${API_BASE_URL}/questions/${id}` : `${API_BASE_URL}/questions`;
-            const method = id ? 'PUT' : 'POST';
-            
-            fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(question)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(() => {
-                cancelEdit();
-                loadData('questions');
-            })
-            .catch(error => {
-                console.error('Error saving question:', error);
-                document.getElementById('question-error').textContent = `Error saving question: ${error.message}`;
             });
         }
         
