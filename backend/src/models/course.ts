@@ -105,7 +105,7 @@ export default class Course {
         return null;
       }
       
-      // Check if course code is being updated and if it already exists
+      // Check if new course code exist
       if (courseData.course_code && courseData.course_code !== existingCourse.code) {
         const courseWithSameCode = await this.getByCode(courseData.course_code);
         if (courseWithSameCode) {
